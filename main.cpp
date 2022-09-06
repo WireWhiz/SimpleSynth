@@ -1,7 +1,7 @@
 #include <iostream>
 #include "src/graphics/window.h"
 #include <imgui/imgui.h>
-#include "src/simpleSynth.h"
+#include "src/synth/simpleSynth.h"
 
 int main()
 {

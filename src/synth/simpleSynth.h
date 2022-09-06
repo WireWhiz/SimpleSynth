@@ -6,8 +6,11 @@
 #define SIMPLESYNTH_SIMPLESYNTH_H
 
 
+#include "soundDevice.h"
+
 class SimpleSynth
 {
+	SoundDevice _device;
 public:
 	SimpleSynth();
 };
