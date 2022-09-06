@@ -1,9 +1,12 @@
 #include <iostream>
 #include "src/graphics/window.h"
 #include <imgui/imgui.h>
+#include "src/simpleSynth.h"
 
 int main()
 {
+	SimpleSynth s;
+
 	Window w;
 	w.run([](int width, int height){
 		ImGui::SetNextWindowPos({0,0});

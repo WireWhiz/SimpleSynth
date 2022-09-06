@@ -8,7 +8,8 @@
 
 class SimpleSynth
 {
-
+public:
+	SimpleSynth();
 };
 
 
