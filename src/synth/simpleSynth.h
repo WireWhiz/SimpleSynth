@@ -13,6 +13,7 @@ class SimpleSynth
 	SoundDevice _device;
 public:
 	SimpleSynth();
+	SoundDevice& device();
 };
 
 

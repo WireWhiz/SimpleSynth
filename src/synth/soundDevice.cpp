@@ -5,7 +5,8 @@
 #include <string>
 #include "soundDevice.h"
 #include <stdexcept>
-#include <cmath>
+#include "soundSource.h"
+#include <tuple>
 
 #ifdef WIN32
 void cwr(HRESULT res)
@@ -35,6 +36,7 @@ void SoundDevice::initWindows()
 	std::cout << "Bits per sample: " << pwfx->wBitsPerSample << std::endl;
 	std::cout << "Samples per second: " << pwfx->nSamplesPerSec << std::endl;
 	std::cout << "Audio frame size: " << pwfx->nBlockAlign << std::endl;*/
+	_samplesPerSec = _format->nSamplesPerSec;
 	if(_format->cbSize >= 22)
 	{
 		WAVEFORMATEXTENSIBLE* pwfxx = (WAVEFORMATEXTENSIBLE*)_format;
@@ -60,7 +62,6 @@ void SoundDevice::initWindows()
 	_audioThread = std::thread([this, bufferSize](){
 		_threadPlaying = true;
 		BYTE* audioData = nullptr;
-		uint64_t currentSample = 0;
 		while(_threadPlaying)
 		{
 			DWORD res = WaitForSingleObject(_bufferReady, 2000);
@@ -76,15 +77,18 @@ void SoundDevice::initWindows()
 			for(uint32_t fIndex = 0; fIndex < writableSize; ++fIndex)
 			{
 				BYTE* frame = audioData + fIndex * _format->nBlockAlign;
-				//*(int32_t*)frame = static_cast<int32_t>(static_cast<int8_t>(std::sin(440 * (2 * 3.14159) * (double)fIndex / 10000000) * 0.5) * SCHAR_MAX) * (INT_MAX / SCHAR_MAX);
-				float hertz1 = 59.0;
-				float hertz2 = 75.0;
-				float pi = 3.14159;
-				float amplitude1 = std::sin(hertz1 * (2.0 * pi) * (float)currentSample++ / _format->nSamplesPerSec);
-				*(float*)frame = amplitude1;
 
-				float amplitude2 = std::sin(hertz2 * (2.0 * pi) * (float)currentSample++ / _format->nSamplesPerSec);
-				*(float*)(frame + _format->nBlockAlign / 2) = amplitude2;
+				float left = 0;
+				float right = 0;
+				for(SoundSource* s : _sources)
+				{
+					auto [sampleL, sampleR] = s->getSample(_currentSample, _format->nSamplesPerSec);
+					left += sampleL;
+					right += sampleR;
+				}
+				*(float*)frame = left;
+				*(float*)(frame + _format->nBlockAlign / _format->nChannels) = right;
+				++_currentSample;
 			}
 
 			cwr(_renderClient->ReleaseBuffer(writableSize, 0));
@@ -120,4 +124,23 @@ SoundDevice::~SoundDevice()
 #elif UNIX
 
 #endif
+}
+
+void SoundDevice::addSource(SoundSource* source)
+{
+	_sources.push_back(source);
+}
+
+void SoundDevice::removeSource(SoundSource* source)
+{
+	auto i = _sources.begin();
+	while(i != _sources.end())
+	{
+		if(*i == source)
+		{
+			_sources.erase(i);
+			return;
+		}
+	}
+	assert(false); //Could not remove source
 }

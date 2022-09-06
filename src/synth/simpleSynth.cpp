@@ -11,3 +11,8 @@ SimpleSynth::SimpleSynth()
 {
 
 }
+
+SoundDevice& SimpleSynth::device()
+{
+	return _device;
+}

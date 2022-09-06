@@ -16,12 +16,17 @@
 
 #include <thread>
 #include <atomic>
+#include <vector>
 
+class SoundSource;
 class SoundDevice
 {
 	uint32_t _samplesPerSec;
+	std::atomic<uint64_t> _currentSample = 0;
 	std::thread _audioThread;
 	std::atomic_bool _threadPlaying = false;
+
+	std::vector<SoundSource*> _sources;
 #ifdef WIN32
 	IMMDevice* _device = nullptr;
 	IAudioClient* _client = nullptr;
@@ -35,6 +40,8 @@ class SoundDevice
 public:
 	SoundDevice();
 	~SoundDevice();
+	void addSource(SoundSource* source);
+	void removeSource(SoundSource* source);
 };
 
 
