@@ -8,10 +8,24 @@ int main()
 {
 	SimpleSynth s;
 
-	auto synthSource = std::make_unique<SynthSource>();
-	synthSource->hertz = 440;
+	auto synthSourceC = std::make_unique<SynthSource>();
+	synthSourceC->startSample = 0;
+	synthSourceC->hertz = 261.63;
+	synthSourceC->volume = 0.3;
 
-	s.device().addSource(synthSource.get());
+	auto synthSourceE = std::make_unique<SynthSource>();
+	synthSourceE->startSample = 30;
+	synthSourceE->hertz = 329.63;
+	synthSourceE->volume = 0.3;
+
+	auto synthSourceG = std::make_unique<SynthSource>();
+	synthSourceC->startSample = 10;
+	synthSourceG->hertz = 392;
+	synthSourceG->volume = 0.3;
+
+	s.device().addSource(synthSourceC.get());
+	s.device().addSource(synthSourceE.get());
+	s.device().addSource(synthSourceG.get());
 
 	Window w;
 	w.run([](int width, int height){
@@ -23,7 +37,8 @@ int main()
 		ImGui::End();
 		ImGui::PopStyleColor();
 	});
-	s.device().removeSource(synthSource.get());
-
+	s.device().removeSource(synthSourceC.get());
+	s.device().removeSource(synthSourceE.get());
+	s.device().removeSource(synthSourceG.get());
 	return 0;
 }
