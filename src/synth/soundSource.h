@@ -12,7 +12,6 @@
 class SoundSource
 {
 public:
-	float volume = 0.5;
 	uint64_t startSample = 0;
 	virtual std::tuple<float, float> getSample(uint64_t currentSample, uint64_t samplesPerSec) = 0;
 };

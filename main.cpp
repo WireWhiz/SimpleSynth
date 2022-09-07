@@ -2,43 +2,70 @@
 #include "src/graphics/window.h"
 #include <imgui/imgui.h>
 #include "src/synth/simpleSynth.h"
-#include "src/synth/synthSource.h"
+#include "src/synth/sinSource.h"
+#include "src/synth/compressorSource.h"
+#include "src/synth/ampSource.h"
+#include "src/synth/squareSource.h"
+#include "src/synth/sawSource.h"
+#include "src/graphics/waveVisualizer.h"
 
 int main()
 {
 	SimpleSynth s;
 
-	auto synthSourceC = std::make_unique<SynthSource>();
-	synthSourceC->startSample = 0;
-	synthSourceC->hertz = 261.63;
-	synthSourceC->volume = 0.3;
+	SinSource sinSynth;
+	sinSynth.startSample = 0;
+	sinSynth.hertz = 261.63;
 
-	auto synthSourceE = std::make_unique<SynthSource>();
-	synthSourceE->startSample = 30;
-	synthSourceE->hertz = 329.63;
-	synthSourceE->volume = 0.3;
+	SquareSource squareSynth;
+	SawSource sawSynth;
 
-	auto synthSourceG = std::make_unique<SynthSource>();
-	synthSourceC->startSample = 10;
-	synthSourceG->hertz = 392;
-	synthSourceG->volume = 0.3;
 
-	s.device().addSource(synthSourceC.get());
-	s.device().addSource(synthSourceE.get());
-	s.device().addSource(synthSourceG.get());
+	CompressorSource compressor(&sinSynth);
+	AmpSource amp(&compressor);
+	amp.amplitude = 0.1;
+
+	WaveVisualizer visual(&compressor);
+
+	s.device().addSource(&amp);
+
 
 	Window w;
-	w.run([](int width, int height){
+	w.run([&compressor, &sinSynth, &squareSynth, &sawSynth, &visual](int width, int height){
 		ImGui::SetNextWindowPos({0,0});
 		ImGui::SetNextWindowSize(ImVec2(width, height));
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, {0.2,0.2,0.2,1});
 		ImGui::Begin("Simple Synth", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
-		ImGui::Text("Hello World");
+		int resolution = compressor.resolution;
+		ImGui::InputInt("Compressor Resolution", &resolution);
+		compressor.resolution = resolution;
+
+		float hertz = sinSynth.hertz;
+		ImGui::SliderFloat("Hertz ", &hertz, 20, 15000);
+		sinSynth.hertz = hertz;
+		squareSynth.hertz = hertz;
+		sawSynth.hertz = hertz;
+
+
+		if(ImGui::Button("Sin Wave"))
+			compressor.source = &sinSynth;
+		ImGui::SameLine();
+		if(ImGui::Button("Square Wave"))
+			compressor.source = &squareSynth;
+		ImGui::SameLine();
+		if(ImGui::Button("Saw Wave"))
+			compressor.source = &sawSynth;
+
+		if(ImGui::CollapsingHeader("Visualization"))
+		{
+			ImGui::DragFloat("##RangeStart", &visual.startTime);
+			ImGui::DragFloat("Range (ms)", &visual.endTime);
+			visual.draw();
+		}
+
 		ImGui::End();
 		ImGui::PopStyleColor();
 	});
-	s.device().removeSource(synthSourceC.get());
-	s.device().removeSource(synthSourceE.get());
-	s.device().removeSource(synthSourceG.get());
+	s.device().removeSource(&amp);
 	return 0;
 }
