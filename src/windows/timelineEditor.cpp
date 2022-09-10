@@ -325,8 +325,8 @@ void TimelineEditor::drawNotePicker()
 	while(beats > 0)
 	{
 		size_t beatChunk = std::min<size_t>(64, beats);
-		ImGui::SameLine(0,0);
-		if(ImGui::BeginTable("Note Picker Grid", (int)beatChunk, ImGuiTableFlags_Borders | ImGuiTableFlags_NoPadOuterX, {beatChunk*noteSize.x, noteSize.y * _allNotes.size()}))
+		ImGui::SameLine(0, 0);
+		if(ImGui::BeginTable(("Note Picker Grid" + std::to_string(beatIndex)).c_str(), (int)beatChunk, ImGuiTableFlags_Borders | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoHostExtendX, {beatChunk*(noteSize.x + 1), noteSize.y * _allNotes.size()}))
 		{
 			for(size_t i = 0; i < beatChunk; ++i)
 				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoReorder, noteSize.x);
