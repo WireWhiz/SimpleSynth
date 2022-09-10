@@ -6,5 +6,5 @@ set(CMAKE_CXX_STANDARD 17)
 add_subdirectory(ext)
 add_subdirectory(src)
 
-add_executable(SimpleSynth main.cpp)
+add_executable(SimpleSynth main.cpp src/windows/timelineEditor.cpp src/windows/timelineEditor.h)
 target_link_libraries(SimpleSynth PUBLIC synth graphics)

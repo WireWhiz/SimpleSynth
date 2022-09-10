@@ -13,7 +13,7 @@ public:
 	SoundSource* _source = nullptr;
 	float amplitude = 1;
 	AmpSource(SoundSource* source);
-	std::tuple<float, float> getSample(uint64_t currentSample, uint64_t samplesPerSec) override;
+	Sample getSample(double currentTime) override;
 };
 
 

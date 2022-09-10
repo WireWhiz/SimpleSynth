@@ -4,15 +4,16 @@
 
 #include "compressorSource.h"
 #include <cmath>
+#include <utility>
 
 CompressorSource::CompressorSource(SoundSource* source)
 {
 	this->source = source;
 }
 
-std::tuple<float, float> CompressorSource::getSample(uint64_t currentSample, uint64_t samplesPerSec)
+SoundSource::Sample CompressorSource::getSample(double currentTime)
 {
-	auto [left, right] = source->getSample(currentSample, samplesPerSec);
+	auto [left, right] = source->getSample(currentTime);
 	double power =  std::pow(2, resolution) / 2;
 	left  = (float)(std::round(left  * power) / power);
 	right = (float)(std::round(right * power) / power);

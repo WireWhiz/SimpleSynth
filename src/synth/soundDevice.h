@@ -40,6 +40,7 @@ class SoundDevice
 public:
 	SoundDevice();
 	~SoundDevice();
+	double currentTime() const;
 	void addSource(SoundSource* source);
 	void removeSource(SoundSource* source);
 };

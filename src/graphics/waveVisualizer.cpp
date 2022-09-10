@@ -20,10 +20,9 @@ void WaveVisualizer::draw()
 	std::vector<float> samples;
 	samples.reserve(width);
 
-	uint64_t startIndex = samplesPerSec * startTime;
 	for (int64_t i = 0; i < width; ++i)
 	{
-		auto [left, right] = source->getSample(i + startIndex, samplesPerSec);
+		auto [left, right] = source->getSample(startTime + ((float)i / (float)samplesPerSec));
 		samples.push_back(left);
 	}
 

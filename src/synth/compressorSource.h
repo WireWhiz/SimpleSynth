@@ -13,7 +13,7 @@ public:
 	SoundSource* source = nullptr;
 	int32_t resolution = 32;
 	CompressorSource(SoundSource* source);
-	std::tuple<float, float> getSample(uint64_t currentSample, uint64_t samplesPerSec) override;
+	Sample getSample(double currentTime) override;
 };
 
 

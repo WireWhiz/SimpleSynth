@@ -7,13 +7,22 @@
 
 
 #include <cstdint>
-#include <tuple>
+#include <utility>
 
 class SoundSource
 {
 public:
+	struct Sample
+	{
+		float left;
+		float right;
+		Sample& operator+=(const Sample&);
+		Sample operator+(const Sample&) const;
+		Sample operator*(float) const;
+	};
+
 	uint64_t startSample = 0;
-	virtual std::tuple<float, float> getSample(uint64_t currentSample, uint64_t samplesPerSec) = 0;
+	virtual Sample getSample(double currentTime) = 0;
 };
 
 

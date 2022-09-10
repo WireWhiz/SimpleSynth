@@ -2,6 +2,7 @@
 // Created by eli on 9/6/2022.
 //
 
+#include <utility>
 #include "ampSource.h"
 
 AmpSource::AmpSource(SoundSource* source)
@@ -9,10 +10,10 @@ AmpSource::AmpSource(SoundSource* source)
 	_source = source;
 }
 
-std::tuple<float, float> AmpSource::getSample(uint64_t currentSample, uint64_t samplesPerSec)
+SoundSource::Sample AmpSource::getSample(double currentTime)
 {
-	auto [left, right] = _source->getSample(currentSample, samplesPerSec);
-	left *= amplitude;
-	right *= amplitude;
-	return {left, right};
+	auto s = _source->getSample(currentTime);
+	s.left *= amplitude;
+	s.right *= amplitude;
+	return s;
 }

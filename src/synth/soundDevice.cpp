@@ -78,16 +78,13 @@ void SoundDevice::initWindows()
 			{
 				BYTE* frame = audioData + fIndex * _format->nBlockAlign;
 
-				float left = 0;
-				float right = 0;
+				SoundSource::Sample sample{0,0};
 				for(SoundSource* s : _sources)
 				{
-					auto [sampleL, sampleR] = s->getSample(_currentSample, _format->nSamplesPerSec);
-					left += sampleL;
-					right += sampleR;
+					sample += s->getSample((double)_currentSample / (double)_samplesPerSec);
 				}
-				*(float*)frame = left;
-				*(float*)(frame + _format->nBlockAlign / _format->nChannels) = right;
+				*(float*)frame = sample.left;
+				*(float*)(frame + _format->nBlockAlign / _format->nChannels) = sample.right;
 				++_currentSample;
 			}
 
@@ -143,4 +140,9 @@ void SoundDevice::removeSource(SoundSource* source)
 		}
 	}
 	assert(false); //Could not remove source
+}
+
+double SoundDevice::currentTime() const
+{
+	return (double)_currentSample / (double)_samplesPerSec;
 }

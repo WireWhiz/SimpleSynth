@@ -2,9 +2,11 @@ add_library(synth STATIC
         simpleSynth.cpp
         soundDevice.cpp
         soundSource.cpp
-        sinSource.cpp
+        sinSynth.cpp
         compressorSource.cpp
         ampSource.cpp
-        squareSource.cpp
-        sawSource.cpp)
+        squareSynth.cpp
+        sawSynth.cpp
+        synth.cpp
+        timelineSource.cpp)
 #target_link_libraries(synth PUBLIC)
