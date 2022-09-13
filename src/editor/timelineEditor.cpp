@@ -11,6 +11,10 @@
 #include "../graphics/waveVisualizer.h"
 #include "imgui_internal.h"
 #include "../synth/soundDevice.h"
+#include "jsoncpp/include/json/json.h"
+#include <fstream>
+#include "serializedData.h"
+#include "tinyfiledialogs.h"
 
 std::vector<std::pair<std::string, float>> baseNotes = {
 		{"F#", 370.0f},
@@ -44,6 +48,7 @@ public:
 			{
 				s += t.timeline.getSample(_editor._currentTime) * t.volume;
 			}
+
 		}
 		_lastTime = currentTime;
 		return s;
@@ -77,6 +82,30 @@ TimelineEditor::~TimelineEditor()
 void TimelineEditor::draw()
 {
 	std::scoped_lock lock(_mutex);
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, {0.2,0.2,0.2,1});
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
+	ImGui::Begin("Simple Synth", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar);
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(3,3));
+	if(ImGui::BeginMenuBar())
+	{
+		if(ImGui::BeginMenu("File"))
+		{
+			if(ImGui::Selectable("Open"))
+			{
+				const char* filter[] = {"*.synth"};
+				const char* promptRes = tinyfd_openFileDialog("Open Project", std::filesystem::current_path().parent_path().string().c_str(), 1, filter, "Simple Synth", 0);
+				if(promptRes)
+					loadProject(promptRes);
+			}
+			if(ImGui::Selectable("Save"))
+				saveProject();
+			ImGui::EndMenu();
+		}
+		ImGui::EndMenuBar();
+	}
+	ImGui::PopStyleVar();
+
 	if(ImGui::BeginTable("MenuSplit", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable | ImGuiTableFlags_NoHostExtendY | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX, ImGui::GetContentRegionAvail()))
 	{
 		ImGui::TableNextRow();
@@ -88,6 +117,10 @@ void TimelineEditor::draw()
 		drawNotePickerWindow();
 		ImGui::EndTable();
 	}
+
+	ImGui::End();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
 }
 
 void TimelineEditor::drawMenu()
@@ -168,7 +201,7 @@ void TimelineEditor::drawMenu()
 					if(ImGui::Selectable(_synths[i].name.c_str(), i == timeline.synth))
 					{
 						timeline.synth = i;
-						timeline.timeline.synth = _synths[i].synth.get();
+						timeline.timeline.synth = _synths[i].source.get();
 					}
 				}
 				ImGui::EndCombo();
@@ -214,13 +247,13 @@ void TimelineEditor::drawMenu()
 				ImGui::InputText("Name##synth", &synth.name);
 
 				const char* synthType = nullptr;
-				if(!synth.synth)
+				if(!synth.source)
 					synthType = "none";
-				else if(dynamic_cast<SinSynth*>(synth.synth.get()))
+				else if(dynamic_cast<SinSynth*>(synth.source.get()))
 					synthType = "Sin Synth";
-				else if(dynamic_cast<SquareSynth*>(synth.synth.get()))
+				else if(dynamic_cast<SquareSynth*>(synth.source.get()))
 					synthType = "Square Synth";
-				else if(dynamic_cast<SawSynth*>(synth.synth.get()))
+				else if(dynamic_cast<SawSynth*>(synth.source.get()))
 					synthType = "Saw Synth";
 
 				bool synthCreated = false;
@@ -228,28 +261,28 @@ void TimelineEditor::drawMenu()
 				{
 					if(ImGui::Selectable("Sin Synth"))
 					{
-						synth.synth = std::make_unique<SinSynth>();
+						synth.source = std::make_unique<SinSynth>();
 						synthCreated = true;
 					}
 					if(ImGui::Selectable("Square Synth"))
 					{
-						synth.synth = std::make_unique<SquareSynth>();
+						synth.source = std::make_unique<SquareSynth>();
 						synthCreated = true;
 					}
 					if(ImGui::Selectable("Saw Synth"))
 					{
-						synth.synth = std::make_unique<SawSynth>();
+						synth.source = std::make_unique<SawSynth>();
 						synthCreated = true;
 					}
 					ImGui::EndCombo();
 				}
 				if(synthCreated)
-					timeline.timeline.synth = synth.synth.get();
+					timeline.timeline.synth = synth.source.get();
 
-				if(synth.synth)
+				if(synth.source)
 				{
-					synth.synth->hertz = 50;
-					WaveVisualizer visualizer(synth.synth.get());
+					synth.source->hertz = 50;
+					WaveVisualizer visualizer(synth.source.get());
 					visualizer.endTime = 150;
 					visualizer.draw();
 				}
@@ -368,6 +401,11 @@ void TimelineEditor::drawNotePicker()
 						else
 							beat.notes.insert(note.second);
 					}
+					if(ImGui::IsItemHovered())
+					{
+						if(hasNote && ImGui::IsMouseDown(ImGuiMouseButton_Right))
+							beat.notes.erase(note.second);
+					}
 					ImGui::PopID();
 				}
 				/*if(isSharp)
@@ -379,9 +417,159 @@ void TimelineEditor::drawNotePicker()
 		}
 	}
 
+	//Draw Time Bar
+	if(_currentTime != 0)
+	{
+		auto* window = ImGui::GetCurrentWindow();
+
+		float x = window->Pos.x + (timeline.beats.size()*(noteSize.x + 1)) * (_currentTime / timeline.duration());
+		float y = noteSize.y * _allNotes.size();
+		window->DrawList->AddLine({x, 0}, {x, y}, ImColor{0.30f, 0.70f, 0.40f, 1.0f});
+	}
+
 	ImGui::PopStyleVar(2);
 	ImGui::EndChild();
 	ImGui::EndChild();
+}
+
+void TimelineEditor::loadProject(const std::filesystem::path& path)
+{
+	if(path.extension() != ".synth")
+		return;
+
+	std::ifstream f(path, std::ios::binary);
+
+	uint32_t jsonSize = 0;
+	f.read((char*)&jsonSize, sizeof(uint32_t));
+	std::string jsonString;
+	jsonString.resize(jsonSize);
+	f.read(jsonString.data(), jsonSize);
+
+	uint32_t binaryDataSize;
+	f.read((char*)&binaryDataSize, sizeof(uint32_t));
+	SerializedData binaryData;
+	binaryData.vector().resize(binaryDataSize);
+	f.read((char*)binaryData.vector().data(), binaryDataSize);
+	f.close();
+	InputSerializer s(binaryData);
+
+	Json::Value json;
+	std::stringstream(jsonString) >> json;
+
+	_synths.resize(0);
+	_timelines.resize(0);
+
+	for(auto& synth : json["synths"])
+	{
+		SynthCtx ctx;
+		ctx.name = synth["name"].asString();
+		std::unique_ptr<Synth> synthSource;
+		if(synth["source"] == "sin")
+			synthSource = std::make_unique<SinSynth>();
+		if(synth["source"] == "square")
+			synthSource = std::make_unique<SquareSynth>();
+		if(synth["source"] == "saw")
+			synthSource = std::make_unique<SawSynth>();
+		ctx.source = std::move(synthSource);
+		_synths.push_back(std::move(ctx));
+	}
+
+	for(auto& timeline : json["timelines"])
+	{
+		TimelineCtx ctx;
+		ctx.name = timeline["name"].asString();
+		ctx.synth = timeline["synth"].asInt();
+		ctx.volume = timeline["volume"].asFloat();
+		ctx.timeline.bpm = timeline["bpm"].asFloat();
+
+		ctx.timeline.synth = _synths[ctx.synth].source.get();
+
+		auto& beats = ctx.timeline.beats;
+		uint32_t beatCount;
+		s >> beatCount;
+		beats.resize(beatCount);
+		for(auto& beat : beats)
+		{
+			uint32_t notes;
+			s >> notes;
+			for(uint32_t n = 0; n < notes; ++n)
+			{
+				float note;
+				s >> note;
+				beat.notes.insert(note);
+			}
+		}
+		_timelines.push_back(std::move(ctx));
+	}
+	if(!_timelines.empty())
+		_selectedTimeline = 0;
+	else
+		_selectedTimeline = -1;
+
+    _saveFile = path;
+}
+
+void TimelineEditor::saveProject()
+{
+	if(_saveFile.empty())
+	{
+		const char* filter[] = {"*.synth"};
+		const char* promptRes = tinyfd_saveFileDialog("Save as", std::filesystem::current_path().replace_filename("new project").string().c_str(), 1, filter, "Simple Synth");
+		if(!promptRes)
+			return;
+		_saveFile = promptRes;
+	}
+
+	Json::Value json;
+	SerializedData binaryData;
+	OutputSerializer s(binaryData);
+
+	for(auto& ctx : _synths)
+	{
+		Json::Value synth;
+		synth["name"] = ctx.name;
+		std::string synthSource = "none";
+		if(dynamic_cast<SinSynth*>(ctx.source.get()))
+			synthSource = "sin";
+		else if(dynamic_cast<SquareSynth*>(ctx.source.get()))
+			synthSource = "square";
+		else if(dynamic_cast<SawSynth*>(ctx.source.get()))
+			synthSource = "saw";
+		synth["source"] = synthSource;
+		json["synths"].append(synth);
+	}
+
+	for(auto& ctx : _timelines)
+	{
+		Json::Value timeline;
+		timeline["name"] = ctx.name;
+		timeline["synth"] = ctx.synth;
+		timeline["volume"] = ctx.volume;
+		timeline["bpm"] = ctx.timeline.bpm;
+		json["timelines"].append(timeline);
+
+		auto& beats = ctx.timeline.beats;
+		s << static_cast<uint32_t>(beats.size());
+		for(auto& beat : beats)
+		{
+			s << static_cast<uint32_t>(beat.notes.size());
+			for(float note : beat.notes)
+				s << note;
+		}
+	}
+
+	std::ofstream f(_saveFile, std::ios::binary);
+
+	Json::FastWriter writer;
+	std::string jsonString = writer.write(json);
+	uint32_t jsonSize = jsonString.size();
+	f.write((char*)&jsonSize, sizeof(uint32_t));
+	f.write(jsonString.data(), jsonSize);
+
+	uint32_t binaryDataSize = binaryData.size();
+	f.write((char*)&binaryDataSize, sizeof(uint32_t));
+	f.write((char*)binaryData.data(), binaryDataSize);
+	f.close();
 }
 
 

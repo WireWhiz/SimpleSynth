@@ -25,3 +25,8 @@ Sample TimelineSource::getSample(double currentTime)
 
 	return output;
 }
+
+double TimelineSource::duration() const
+{
+	return (60 / bpm) * beats.size();
+}

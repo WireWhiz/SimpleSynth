@@ -8,6 +8,7 @@
 #include "soundSource.h"
 #include <vector>
 #include <unordered_set>
+#include <robin_hood/robin_hood.h>
 
 class Synth;
 class TimelineSource : public SoundSource
@@ -17,7 +18,7 @@ public:
 	Synth* synth = nullptr;
 	struct Beat
 	{
-		std::unordered_set<float> notes;
+		robin_hood::unordered_set<float> notes;
 	};
 
 	bool loop = false;
@@ -25,6 +26,7 @@ public:
 	std::vector<Beat> beats;
 	double startTime = 0;
 	Sample getSample(double currentTime) override;
+	double duration() const;
 };
 
 

@@ -4,3 +4,6 @@
 [submodule "ext/glad"]
 	path = ext/glad
 	url = https://github.com/Dav1dde/glad
+[submodule "ext/jsoncpp"]
+	path = ext/jsoncpp
+	url = https://github.com/open-source-parsers/jsoncpp

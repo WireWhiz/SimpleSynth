@@ -8,7 +8,9 @@ add_library(synth STATIC
         squareSynth.cpp
         sawSynth.cpp
         synth.cpp
-        timelineSource.cpp sample.cpp sample.h)
+        timelineSource.cpp
+        sample.cpp)
+target_link_libraries(synth PUBLIC includes)
 if(UNIX)
 target_link_libraries(synth PUBLIC -lpulse)
 endif()

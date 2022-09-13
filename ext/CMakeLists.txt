@@ -19,3 +19,15 @@ add_library(glad STATIC
 target_include_directories(glad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/glad/include)
 
 add_subdirectory(glfw)
+
+option(JSONCPP_WITH_TESTS OFF)
+option(JSONCPP_WITH_POST_BUILD_UNITTEST OFF)
+option(JSONCPP_WITH_PKGCONFIG_SUPPORT OFF)
+option(JSONCPP_WITH_CMAKE_PACKAGE "Generate and install cmake package files" ON)
+option(BUILD_SHARED_LIBS OFF)
+add_subdirectory(jsoncpp)
+
+add_subdirectory(tfd)
+
+add_library(includes INTERFACE)
+target_include_directories(includes INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})

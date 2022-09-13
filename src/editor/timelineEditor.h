@@ -37,7 +37,7 @@ class TimelineEditor
 	struct SynthCtx
 	{
 		std::string name;
-		std::unique_ptr<Synth> synth;
+		std::unique_ptr<Synth> source;
 	};
 
 	std::vector<TimelineCtx> _timelines;
@@ -51,6 +51,9 @@ class TimelineEditor
 	void drawMenu();
 	void drawNotePickerWindow();
 	void drawNotePicker();
+	void loadProject(const std::filesystem::path& path);
+	void saveProject();
+
 public:
 	TimelineEditor(SoundDevice* device);
 	~TimelineEditor();

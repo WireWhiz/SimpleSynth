@@ -80,7 +80,7 @@ void SoundDevice::initWindows()
 			{
 				BYTE* frame = audioData + fIndex * _format->nBlockAlign;
 
-				Sample sample = getSample(double)_currentSample / (double)_samplesPerSec);
+				Sample sample = getSample((double)_currentSample / (double)_samplesPerSec);
 				*(float*)frame = sample.left;
 				*(float*)(frame + _format->nBlockAlign / _format->nChannels) = sample.right;
 				++_currentSample;
