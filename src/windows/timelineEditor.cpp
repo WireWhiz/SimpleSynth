@@ -56,15 +56,13 @@ TimelineEditor::TimelineEditor(SoundDevice* device)
 
 	for(int octave = 3; octave >= -3; --octave)
 	{
+		float octaveMult = 1;
+		if(octave < 0)
+			octaveMult = 1.0f / std::pow(2.0f, (-1.0f * (float)octave));
+		if(0 < octave)
+			octaveMult = std::pow(2.0f, (float)octave);
 		for(auto& note : baseNotes)
-		{
-			float hertz = note.second;
-			if(octave < 0)
-				hertz = hertz * std::pow(2, 1 / (-1.0f * (float)octave));
-			if(0 < octave)
-				hertz = hertz * std::pow(2, octave);
-			_allNotes.emplace_back(std::to_string(octave + 4) + " " + note.first, hertz);
-		}
+			_allNotes.emplace_back(std::to_string(octave + 4) + " " + note.first, note.second * octaveMult);
 	}
 	_player = new TimelineEditorPlayer(*this);
 	_device->addSource(_player);
@@ -225,16 +223,28 @@ void TimelineEditor::drawMenu()
 				else if(dynamic_cast<SawSynth*>(synth.synth.get()))
 					synthType = "Saw Synth";
 
+				bool synthCreated = false;
 				if(ImGui::BeginCombo("Type", synthType))
 				{
 					if(ImGui::Selectable("Sin Synth"))
+					{
 						synth.synth = std::make_unique<SinSynth>();
+						synthCreated = true;
+					}
 					if(ImGui::Selectable("Square Synth"))
+					{
 						synth.synth = std::make_unique<SquareSynth>();
+						synthCreated = true;
+					}
 					if(ImGui::Selectable("Saw Synth"))
+					{
 						synth.synth = std::make_unique<SawSynth>();
+						synthCreated = true;
+					}
 					ImGui::EndCombo();
 				}
+				if(synthCreated)
+					timeline.timeline.synth = synth.synth.get();
 
 				if(synth.synth)
 				{
@@ -292,6 +302,7 @@ void TimelineEditor::drawNotePicker()
 {
 	ImGui::BeginChild("Note Picker", {0,ImGui::GetContentRegionAvail().y - 2}, false);
 	ImVec2 noteSize = {80, 18};
+	ImColor sharpColor = ImColor(0.20f, 0.40f, 0.30f, 0.34f);
 	if(ImGui::BeginTable("Note Names", 1, ImGuiTableFlags_Borders | ImGuiTableFlags_NoPadOuterX, {40, 0}))
 	{
 		ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 40);
@@ -300,6 +311,8 @@ void TimelineEditor::drawNotePicker()
 		{
 			ImGui::TableNextRow(0, noteSize.y);
 			ImGui::TableNextColumn();
+			if(note.first[note.first.size() - 1] == '#')
+				ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, sharpColor);
 			ImGui::Text("%s", note.first.c_str());
 		}
 
@@ -329,13 +342,22 @@ void TimelineEditor::drawNotePicker()
 		if(ImGui::BeginTable(("Note Picker Grid" + std::to_string(beatIndex)).c_str(), (int)beatChunk, ImGuiTableFlags_Borders | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoHostExtendX, {beatChunk*(noteSize.x + 1), noteSize.y * _allNotes.size()}))
 		{
 			for(size_t i = 0; i < beatChunk; ++i)
-				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoReorder, noteSize.x);
+				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoReorder |  ImGuiTableFlags_RowBg, noteSize.x);
 			for(auto& note : _allNotes)
 			{
+				bool isSharp = note.first[note.first.size() - 1] == '#';
+				if(isSharp)
+				{
+					/*ImGui::PushStyleColor(ImGuiCol_TableRowBg, ImVec4(0.16f, 0.48f, 0.29f, 0.54f));
+					ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, ImVec4(0.16f, 0.48f, 0.29f, 0.54f));*/
+				}
 				ImGui::TableNextRow(0, noteSize.y);
+
 				for(size_t i = 0; i < beatChunk; ++i)
 				{
 					ImGui::TableNextColumn();
+					if(isSharp)
+						ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, sharpColor);
 					ImGui::PushID(selectableID++);
 					auto& beat = timeline.beats[beatIndex + i];
 					bool hasNote = beat.notes.count(note.second);
@@ -348,6 +370,8 @@ void TimelineEditor::drawNotePicker()
 					}
 					ImGui::PopID();
 				}
+				/*if(isSharp)
+					ImGui::PopStyleColor(2);*/
 			}
 			beatIndex += beatChunk;
 			beats -= beatChunk;
