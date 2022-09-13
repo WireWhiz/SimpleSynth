@@ -7,7 +7,7 @@
 #include <cmath>
 #include <utility>
 
-SoundSource::Sample SinSynth::getSample(double currentTime)
+Sample SinSynth::getSample(double currentTime)
 {
 	const float PI_2 = 3.14159265359 * 2;
 	float amplitude = std::sin(hertz * PI_2 * currentTime);

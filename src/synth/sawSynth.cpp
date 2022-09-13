@@ -6,7 +6,7 @@
 #include <cmath>
 #include <utility>
 
-SoundSource::Sample SawSynth::getSample(double currentTime)
+Sample SawSynth::getSample(double currentTime)
 {
 	float a = (float)(currentTime * hertz);
 	a = (a - static_cast<int32_t>(a)) * 2 - 1;

@@ -8,19 +8,11 @@
 
 #include <cstdint>
 #include <utility>
+#include "sample.h"
 
 class SoundSource
 {
 public:
-	struct Sample
-	{
-		float left;
-		float right;
-		Sample& operator+=(const Sample&);
-		Sample operator+(const Sample&) const;
-		Sample operator*(float) const;
-	};
-
 	uint64_t startSample = 0;
 	virtual Sample getSample(double currentTime) = 0;
 };

@@ -11,7 +11,7 @@ CompressorSource::CompressorSource(SoundSource* source)
 	this->source = source;
 }
 
-SoundSource::Sample CompressorSource::getSample(double currentTime)
+Sample CompressorSource::getSample(double currentTime)
 {
 	auto [left, right] = source->getSample(currentTime);
 	double power =  std::pow(2, resolution) / 2;

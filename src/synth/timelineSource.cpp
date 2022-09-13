@@ -5,7 +5,7 @@
 #include "timelineSource.h"
 #include "synth.h"
 
-SoundSource::Sample TimelineSource::getSample(double currentTime)
+Sample TimelineSource::getSample(double currentTime)
 {
 	currentTime -= startTime;
 	Sample output = {0,0};

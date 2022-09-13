@@ -10,33 +10,41 @@
 #include <Mmdeviceapi.h>
 #include <comdef.h>
 
-#elif UNIX
-
+#elif __linux__
+#include <pulse/thread-mainloop.h>
+#include <pulse/error.h>
+#include <pulse/stream.h>
 #endif
 
 #include <thread>
 #include <atomic>
 #include <vector>
+#include "sample.h"
 
 class SoundSource;
 class SoundDevice
 {
 	uint32_t _samplesPerSec;
 	std::atomic<uint64_t> _currentSample = 0;
-	std::thread _audioThread;
-	std::atomic_bool _threadPlaying = false;
 
 	std::vector<SoundSource*> _sources;
 #ifdef WIN32
+    std::thread _audioThread;
+	std::atomic_bool _threadPlaying = false;
 	IMMDevice* _device = nullptr;
 	IAudioClient* _client = nullptr;
 	IAudioRenderClient* _renderClient = nullptr;
 	WAVEFORMATEX* _format = nullptr;
 	HANDLE _bufferReady = nullptr;
 	void initWindows();
-#elif UNIX
-	void initUnix();
+#elif __linux__
+    pa_threaded_mainloop* _mainLoop = nullptr;
+    pa_context* _ctx = nullptr;
+    pa_stream* _outStream = nullptr;
+	void initLinux();
 #endif
+
+    Sample getSample(double time);
 public:
 	SoundDevice();
 	~SoundDevice();

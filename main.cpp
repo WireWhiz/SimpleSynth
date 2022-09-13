@@ -14,6 +14,7 @@
 
 int main()
 {
+    Window w;
 	SimpleSynth s;
 
 	/*SinSynth sinSynth;
@@ -38,7 +39,6 @@ int main()
 
 	TimelineEditor editor(&s.device());
 
-	Window w;
 	w.run([&](int width, int height){
 		ImGui::SetNextWindowPos({0,0});
 		ImGui::SetNextWindowSize(ImVec2(width, height));

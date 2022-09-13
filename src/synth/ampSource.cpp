@@ -10,7 +10,7 @@ AmpSource::AmpSource(SoundSource* source)
 	_source = source;
 }
 
-SoundSource::Sample AmpSource::getSample(double currentTime)
+Sample AmpSource::getSample(double currentTime)
 {
 	auto s = _source->getSample(currentTime);
 	s.left *= amplitude;

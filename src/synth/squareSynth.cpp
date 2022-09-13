@@ -5,7 +5,7 @@
 #include <utility>
 #include "squareSynth.h"
 
-SoundSource::Sample SquareSynth::getSample(double currentTime)
+Sample SquareSynth::getSample(double currentTime)
 {
 	float a = (float)(static_cast<int64_t>(currentTime * hertz * 2) % 2) * 2 - 1;
 
